@@ -1,10 +1,12 @@
 FROM golang:1.21
 
-WORKDIR /go/src/app
+WORKDIR /app
 
-COPY *.go .
+COPY . .
 
-RUN go mod init dispatch && go get
-RUN go install
+RUN go mod init dispatch \
+ && go get github.com/instana/go-sensor@v1.66.0 \
+ && go mod tidy \
+ && go build -o dispatch ./...
 
-CMD dispatch
+CMD ["./dispatch"]
