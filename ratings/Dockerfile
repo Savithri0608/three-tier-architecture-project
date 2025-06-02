@@ -1,31 +1,39 @@
 #
 # Build the app
 #
-FROM php:7.4-apache
+FROM php:8.3-apache
 
-RUN apt-get update && apt-get install -yqq unzip libzip-dev \
-    && docker-php-ext-install pdo_mysql opcache zip
+# Install required packages and PHP extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    unzip libzip-dev git curl zlib1g-dev libicu-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo_mysql opcache zip intl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Enable AutoProfile for PHP which is currently opt-in beta
+# Enable Apache modules
+RUN a2enmod rewrite status
+
+# Enable AutoProfile for Instana (still opt-in if supported)
 RUN echo "instana.enable_auto_profile=1" > "/usr/local/etc/php/conf.d/zzz-instana-extras.ini"
 
-# relax permissions on status
+# Configure Apache
 COPY status.conf /etc/apache2/mods-available/status.conf
-# Enable Apache mod_rewrite and status
-RUN a2enmod rewrite && a2enmod status
 
+# Set working directory
 WORKDIR /var/www/html
 
-COPY html/ /var/www/html
+# Copy app files
+COPY html/ /var/www/html/
 
-COPY --from=composer /usr/bin/composer /usr/bin/composer
-RUN composer install
+# Install Composer (from official Composer image)
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# This is important. Symfony needs write permissions and we
-# dont know the context in which the container will run, i.e.
-# which user will be forced from the outside so better play
-# safe for this simple demo.
-RUN rm -Rf /var/www/var/*
-RUN chown -R www-data /var/www
-RUN chmod -R 777 /var/www
+# Install Symfony dependencies
+RUN composer install --no-interaction --no-dev --optimize-autoloader
 
+# Set appropriate permissions (safer than chmod 777)
+RUN chown -R www-data:www-data /var/www \
+    && find var -type d -exec chmod 775 {} \; \
+    && find var -type f -exec chmod 664 {} \;
+
+# Expose port 80 (already done implicitly by Apache base image)
+EXPOSE 80
