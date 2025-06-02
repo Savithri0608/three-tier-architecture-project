@@ -1,10 +1,18 @@
 FROM golang:1.17
 
-WORKDIR /go/src/app
+WORKDIR /app
 
-COPY *.go .
+# Copy Go module files first for better caching
+COPY go.mod go.sum ./
 
-RUN go mod init dispatch && go get
-RUN go install
+# Download dependencies
+RUN go mod download
 
-CMD dispatch
+# Copy the rest of the source code
+COPY . .
+
+# Build the binary
+RUN go build -o dispatch
+
+# Run the binary
+CMD ["./dispatch"]
