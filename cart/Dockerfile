@@ -1,16 +1,17 @@
-FROM node:14
+FROM node:18
 
-ENV INSTANA_AUTO_PROFILE true
-
-EXPOSE 8080
+ENV NODE_ENV=production
+ENV INSTANA_AUTO_PROFILE=true
 
 WORKDIR /opt/server
 
-COPY package.json /opt/server/
+# Install dependencies
+COPY package*.json ./
+RUN npm install --omit=dev
 
-RUN npm install
+# Copy app code
+COPY server.js ./
 
-COPY server.js /opt/server/
+EXPOSE 8080
 
 CMD ["node", "server.js"]
-
