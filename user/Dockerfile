@@ -1,16 +1,23 @@
-FROM node:14
+FROM node:20
 
-ENV INSTANA_AUTO_PROFILE true
+# Optional environment variable for Instana or profiling
+ENV INSTANA_AUTO_PROFILE=true
 
-EXPOSE 8080
-
+# Set working directory
 WORKDIR /opt/server
 
-COPY package.json /opt/server/
+# Install dependencies
+COPY package*.json ./
+RUN npm install --production
 
-RUN npm install
+# Copy source code
+COPY server.js ./
 
-COPY server.js /opt/server/
+# Expose app port
+EXPOSE 8080
 
+# Use a non-root user if possible
+USER node
+
+# Start the app
 CMD ["node", "server.js"]
-
