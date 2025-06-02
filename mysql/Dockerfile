@@ -1,4 +1,4 @@
-FROM mysql:5.7
+FROM mysql:8.0
 
 VOLUME /data
 
@@ -7,12 +7,13 @@ ENV MYSQL_ALLOW_EMPTY_PASSWORD=yes \
     MYSQL_USER=shipping \
     MYSQL_PASSWORD=secret
 
-# change datadir entry in /etc/mysql/my.cnf
+# Optional: Set default authentication plugin if needed for compatibility
+ENV MYSQL_ROOT_PASSWORD=root
+CMD ["--default-authentication-plugin=mysql_native_password"]
+
+# Copy and run custom configuration script (ensure it has a shebang!)
 COPY config.sh /root/
-RUN /root/config.sh
+RUN chmod +x /root/config.sh && /root/config.sh
 
+# Copy initialization SQL/scripts
 COPY scripts/* /docker-entrypoint-initdb.d/
-
-#RUN /entrypoint.sh mysqld & while [ ! -f /tmp/finished ]; do sleep 10; done
-#RUN rm /docker-entrypoint-initdb.d/*
-
